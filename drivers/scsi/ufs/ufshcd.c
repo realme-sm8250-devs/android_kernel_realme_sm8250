@@ -277,19 +277,23 @@ static void ufshcd_hex_dump(struct ufs_hba *hba, const char * const str,
 			    const void *buf, size_t len)
 
 {
-	/*
-	 * device name is expected to take up ~20 characters and "str" passed
-	 * to this function is expected to be of ~10 character so we would need
-	 * ~30 characters string to hold the concatenation of these 2 strings.
-	 */
-	#define MAX_PREFIX_STR_SIZE 50
-	char prefix_str[MAX_PREFIX_STR_SIZE] = {0};
+	u32 *regs;
+	size_t pos;
 
-	/* concatenate the device name and "str" */
-	snprintf(prefix_str, MAX_PREFIX_STR_SIZE, "%s %s: ",
-		 dev_name(hba->dev), str);
-	print_hex_dump(KERN_ERR, prefix_str, DUMP_PREFIX_OFFSET,
-		       16, 4, buf, len, false);
+	if (offset % 4 != 0 || len % 4 != 0) /* keep readl happy */
+		return -EINVAL;
+
+	regs = kzalloc(len, GFP_KERNEL);
+	if (!regs)
+		return -ENOMEM;
+
+	for (pos = 0; pos < len; pos += 4)
+		regs[pos / 4] = ufshcd_readl(hba, offset + pos);
+
+	ufshcd_hex_dump(prefix, regs, len);
+	kfree(regs);
+
+	return 0;
 }
 
 enum {
@@ -820,30 +824,11 @@ static inline void ufshcd_cond_add_cmd_trace(struct ufs_hba *hba,
 		}
 	}
 
-	if (lrbp->cmd && ((lrbp->command_type == UTP_CMD_TYPE_SCSI) ||
-			  (lrbp->command_type == UTP_CMD_TYPE_UFS_STORAGE))) {
-		cmd_type = "scsi";
-		cmd_id = (u8)(*lrbp->cmd->cmnd);
-	} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
-		if (hba->dev_cmd.type == DEV_CMD_TYPE_NOP) {
-			cmd_type = "nop";
-			cmd_id = 0;
-		} else if (hba->dev_cmd.type == DEV_CMD_TYPE_QUERY) {
-			cmd_type = "query";
-			cmd_id = hba->dev_cmd.query.request.upiu_req.opcode;
-			idn = hba->dev_cmd.query.request.upiu_req.idn;
-		}
-	}
-
-	__ufshcd_cmd_log(hba, (char *) str, cmd_type, tag, cmd_id, idn,
-			 lrbp->lun, lba, transfer_len);
+	intr = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
+	doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+	trace_ufshcd_command(dev_name(hba->dev), str, tag,
+				doorbell, transfer_len, intr, lba, opcode);
 }
-#else
-static inline void ufshcd_cond_add_cmd_trace(struct ufs_hba *hba,
-					unsigned int tag, const char *str)
-{
-}
-#endif
 
 static void ufshcd_print_clk_freqs(struct ufs_hba *hba)
 {
@@ -1933,8 +1918,16 @@ static int ufshcd_devfreq_target(struct device *dev,
 	}
 	spin_unlock_irqrestore(hba->host->host_lock, irq_flags);
 
+	pm_runtime_get_noresume(hba->dev);
+	if (!pm_runtime_active(hba->dev)) {
+		pm_runtime_put_noidle(hba->dev);
+		ret = -EAGAIN;
+		goto out;
+	}
 	start = ktime_get();
 	ret = ufshcd_devfreq_scale(hba, scale_up);
+	pm_runtime_put(hba->dev);
+
 	trace_ufshcd_profile_clk_scaling(dev_name(hba->dev),
 		(scale_up ? "up" : "down"),
 		ktime_to_us(ktime_sub(ktime_get(), start)), ret);
@@ -4955,7 +4948,7 @@ static int ufshcd_dme_enable(struct ufs_hba *hba)
 	ret = ufshcd_send_uic_cmd(hba, &uic_cmd);
 	if (ret)
 		dev_err(hba->dev,
-			"dme-reset: error code %d\n", ret);
+			"dme-enable: error code %d\n", ret);
 
 	return ret;
 }
@@ -10891,24 +10884,7 @@ int ufshcd_shutdown(struct ufs_hba *hba)
 		goto out;
 
 	pm_runtime_get_sync(hba->dev);
-	ufshcd_hold_all(hba);
-	ufshcd_mark_shutdown_ongoing(hba);
-	ufshcd_shutdown_clkscaling(hba);
-	/**
-	 * (1) Acquire the lock to stop any more requests
-	 * (2) Wait for all issued requests to complete
-	 */
-	ufshcd_get_write_lock(hba);
-	ufshcd_scsi_block_requests(hba);
-	ret = ufshcd_wait_for_doorbell_clr(hba, U64_MAX);
-	if (ret)
-		dev_err(hba->dev, "%s: waiting for DB clear: failed: %d\n",
-			__func__, ret);
-	/* Requests may have errored out above, let it be handled */
-	flush_work(&hba->eh_work);
-	/* reqs issued from contexts other than shutdown will fail from now */
-	ufshcd_scsi_unblock_requests(hba);
-	ufshcd_release_all(hba);
+
 	ret = ufshcd_suspend(hba, UFS_SHUTDOWN_PM);
 out:
 	if (ret)
