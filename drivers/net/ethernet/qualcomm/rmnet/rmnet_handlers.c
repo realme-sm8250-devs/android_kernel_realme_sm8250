@@ -445,16 +445,7 @@ rx_handler_result_t rmnet_rx_handler(struct sk_buff **pskb)
 	trace_rmnet_low(RMNET_MODULE, RMNET_RCV_FROM_PND, 0xDEF,
 			0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 	dev = skb->dev;
-<<<<<<< HEAD
 	port = rmnet_get_port(dev);
-=======
-	port = rmnet_get_port_rcu(dev);
-	if (unlikely(!port)) {
-		atomic_long_inc(&skb->dev->rx_nohandler);
-		kfree_skb(skb);
-		goto done;
-	}
->>>>>>> 64efa35c856f01b16a9342b8822c60fb0245b397
 
 	switch (port->rmnet_mode) {
 	case RMNET_EPMODE_VND:
