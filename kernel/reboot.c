@@ -562,7 +562,7 @@ static int __init reboot_setup(char *str)
 				if (rc)
 					return rc;
 			} else
-				*mode = REBOOT_SOFT;
+				reboot_mode = REBOOT_SOFT;
 			break;
 		}
 		case 'g':
