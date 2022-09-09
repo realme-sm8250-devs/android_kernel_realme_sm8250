@@ -258,14 +258,7 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 	};
 	unsigned int seq_id = 0;
 
-#ifdef CONFIG_F2FS_BD_STAT
-	u64 fsync_begin = 0, fsync_end = 0, wr_file_end, cp_begin = 0,
-	    cp_end = 0, sync_node_begin = 0, sync_node_end = 0,
-	    flush_begin = 0, flush_end = 0;
-#endif
-
-	if (unlikely(f2fs_readonly(inode->i_sb) ||
-				is_sbi_flag_set(sbi, SBI_CP_DISABLED)))
+	if (unlikely(f2fs_readonly(inode->i_sb)))
 		return 0;
 
 	trace_f2fs_sync_file_enter(inode);
@@ -295,7 +288,7 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 	wr_file_end = local_clock();
 #endif
 
-	if (ret) {
+	if (ret || is_sbi_flag_set(sbi, SBI_CP_DISABLED)) {
 		trace_f2fs_sync_file_exit(inode, cp_reason, datasync, ret);
 		return ret;
 	}
