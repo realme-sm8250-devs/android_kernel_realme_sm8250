@@ -2830,7 +2830,7 @@ static int aw8697_ram_update(struct aw8697 *aw8697)
 		}
 	}
     aw8697->haptic_real_f0 = (aw8697->f0 / 10);// get f0 from nvram
-    pr_err("%s: aw8697->haptic_real_f0 [%d]\n", __func__, aw8697->haptic_real_f0);
+    //pr_err("%s: aw8697->haptic_real_f0 [%d]\n", __func__, aw8697->haptic_real_f0);
 /*
     if (aw8697->haptic_real_f0 <167)
     {
@@ -3290,9 +3290,20 @@ static int aw8697_haptic_set_bst_peak_cur(struct aw8697 *aw8697, unsigned char p
     return 0;
 }
 
+static unsigned char aw8697_haptic_set_level(struct aw8697 *aw8697, int gain)
+{
+    int val = 80;
+
+    val = aw8697->level * gain / 3;
+    if (val > 255)
+        val = 255;
+
+    return val;
+}
+
 static int aw8697_haptic_set_gain(struct aw8697 *aw8697, unsigned char gain)
 {
-    aw8697_i2c_write(aw8697, AW8697_REG_DATDBG, gain);
+    aw8697_i2c_write(aw8697, AW8697_REG_DATDBG, aw8697_haptic_set_level(aw8697, gain));
     return 0;
 }
 
@@ -3609,8 +3620,8 @@ static int aw8697_haptic_ram_vbat_comp(struct aw8697 *aw8697, bool flag)
     } else {
         aw8697_haptic_set_gain(aw8697, aw8697->gain);
     }
-    pr_err("%s: aw8697->gain = 0x%x, temp_gain = 0x%x, aw8697->ram_vbat_comp=%d.\n",
-        __func__, aw8697->gain, temp_gain, aw8697->ram_vbat_comp);
+    //pr_err("%s: aw8697->gain = 0x%x, temp_gain = 0x%x, aw8697->ram_vbat_comp=%d.\n",
+        //__func__, aw8697->gain, temp_gain, aw8697->ram_vbat_comp);
 
     return 0;
 }
@@ -5432,7 +5443,7 @@ static int aw8697_haptic_f0_calibration(struct aw8697 *aw8697)
 	int f0_dft_step = 0;
 #endif
 
-    pr_err("%s enter\n", __func__);
+    //pr_err("%s enter\n", __func__);
 
     aw8697->f0_cali_flag = AW8697_HAPTIC_CALI_F0;
     aw8697_i2c_write(aw8697, AW8697_REG_TRIM_LRA, 0);
@@ -5441,7 +5452,7 @@ static int aw8697_haptic_f0_calibration(struct aw8697 *aw8697)
     } else {
         /* max and min limit */
         f0_limit = aw8697->f0;
-        pr_err("%s get f0=%d\n", __func__, f0_limit);
+        //pr_err("%s get f0=%d\n", __func__, f0_limit);
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
         if (aw8697->device_id == 832 || aw8697->device_id == 833) {
@@ -6009,7 +6020,7 @@ static int aw8697_haptic_init(struct aw8697 *aw8697)
 
     aw8697->activate_mode = AW8697_HAPTIC_ACTIVATE_CONT_MODE;
 	aw8697->vibration_style = AW8697_HAPTIC_VIBRATION_CRISP_STYLE;
-
+    aw8697->level = 3;
     ret = aw8697_i2c_read(aw8697, AW8697_REG_WAVSEQ1, &reg_val);
     aw8697->index = reg_val & 0x7F;
     ret = aw8697_i2c_read(aw8697, AW8697_REG_DATDBG, &reg_val);
@@ -6233,7 +6244,7 @@ static ssize_t aw8697_duration_store(struct device *dev,
         return rc;
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
-    pr_err("%s: value=%d\n", __FUNCTION__, val);
+    //pr_err("%s: value=%d\n", __FUNCTION__, val);
 #endif
     /* setting 0 on duration is NOP for now */
     if (val <= 0)
@@ -6319,7 +6330,7 @@ static ssize_t aw8697_activate_store(struct device *dev,
     if (val != 0 && val != 1)
         return count;
 
-    pr_err("%s: value=%d\n", __FUNCTION__, val);
+    //pr_err("%s: value=%d\n", __FUNCTION__, val);
 #ifndef CONFIG_OPLUS_HAPTIC_OOS
     hrtimer_cancel(&aw8697->timer);
 #endif
@@ -6342,7 +6353,7 @@ static ssize_t aw8697_activate_store(struct device *dev,
 		return count;
 	}
 #endif
-		pr_err("%s: 1 aw8697->gain=0x%02x\n", __FUNCTION__, aw8697->gain);
+		//pr_err("%s: 1 aw8697->gain=0x%02x\n", __FUNCTION__, aw8697->gain);
         if (aw8697->gain >= AW8697_HAPTIC_RAM_VBAT_COMP_GAIN) {
             aw8697->gain = AW8697_HAPTIC_RAM_VBAT_COMP_GAIN;
         }
@@ -6594,7 +6605,7 @@ static ssize_t aw8697_vmax_store(struct device *dev,
     if (rc < 0)
         return rc;
 
-    pr_err("%s: value=%d\n", __FUNCTION__, val);
+    //pr_err("%s: value=%d\n", __FUNCTION__, val);
 
     mutex_lock(&aw8697->lock);
 #ifdef OPLUS_FEATURE_CHG_BASIC
@@ -6634,7 +6645,7 @@ static ssize_t aw8697_vmax_store(struct device *dev,
     aw8697_haptic_set_bst_vol(aw8697, aw8697->vmax);
 #endif
     mutex_unlock(&aw8697->lock);
-    pr_err("%s:aw8697->gain[0x%x], aw8697->vmax[0x%x] end\n", __FUNCTION__, aw8697->gain, aw8697->vmax);
+    //pr_err("%s:aw8697->gain[0x%x], aw8697->vmax[0x%x] end\n", __FUNCTION__, aw8697->gain, aw8697->vmax);
     return count;
 }
 
@@ -6669,10 +6680,53 @@ static ssize_t aw8697_gain_store(struct device *dev,
     if (rc < 0)
         return rc;
 
-    pr_err("%s: value=%d\n", __FUNCTION__, val);
+    //pr_err("%s: value=%d\n", __FUNCTION__, val);
 
     mutex_lock(&aw8697->lock);
     aw8697->gain = val;
+    aw8697_haptic_set_gain(aw8697, aw8697->gain);
+    mutex_unlock(&aw8697->lock);
+    return count;
+}
+
+
+static ssize_t aw8697_level_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+#ifdef TIMED_OUTPUT
+    struct timed_output_dev *to_dev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(to_dev, struct aw8697, to_dev);
+#else
+    struct led_classdev *cdev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(cdev, struct aw8697, cdev);
+#endif
+
+    return snprintf(buf, PAGE_SIZE, "%d\n", aw8697->level);
+}
+
+static ssize_t aw8697_level_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t count)
+{
+#ifdef TIMED_OUTPUT
+    struct timed_output_dev *to_dev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(to_dev, struct aw8697, to_dev);
+#else
+    struct led_classdev *cdev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(cdev, struct aw8697, cdev);
+#endif
+    unsigned int val = 0;
+    int rc = 0;
+
+    rc = kstrtouint(buf, 0, &val);
+    if (rc < 0)
+        return rc;
+
+    if (val < 0 || val > 10)
+        val = 3;
+
+    pr_info("%s: value=%d\n", __FUNCTION__, val);
+    mutex_lock(&aw8697->lock);
+    aw8697->level = val;
     aw8697_haptic_set_gain(aw8697, aw8697->gain);
     mutex_unlock(&aw8697->lock);
     return count;
@@ -6918,7 +6972,7 @@ static ssize_t aw8697_rtp_store(struct device *dev, struct device_attribute *att
 		mutex_unlock(&aw8697->lock);
 		return rc;
 	}
-    pr_err("%s: val [%d] \n", __func__, val);
+    //pr_err("%s: val [%d] \n", __func__, val);
 
     if (val == 1025) {
         mute = true;
@@ -7088,7 +7142,7 @@ static ssize_t aw8697_f0_store(struct device *dev, struct device_attribute *attr
     if (rc < 0)
         return rc;
 
-    pr_err("%s:  f0 = %d\n", __FUNCTION__, val);
+    //pr_err("%s:  f0 = %d\n", __FUNCTION__, val);
 
 #ifdef CONFIG_OPLUS_HAPTIC_OOS
 	if (aw8697->device_id == 815 || aw8697->device_id == 1815 || aw8697->device_id == 9595) {
@@ -7734,7 +7788,7 @@ static int aw8697_check_f0_data(struct aw8697 *aw8697)
 	int ret = 0;
 
 	f0_limit = aw8697->f0;
-	pr_err("%s get f0=%d\n", __func__, f0_limit);
+	//pr_err("%s get f0=%d\n", __func__, f0_limit);
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	if (aw8697->device_id == 832 || aw8697->device_id == 833) {
@@ -7813,7 +7867,7 @@ static ssize_t aw8697_f0_data_store(struct device *dev, struct device_attribute 
     if (rc < 0)
         return rc;
 
-    pr_err("%s:  f0 = %d\n", __FUNCTION__, val);
+    //pr_err("%s:  f0 = %d\n", __FUNCTION__, val);
 
     aw8697->clock_system_f0_cali_lra = val;
 #ifdef CONFIG_OPLUS_HAPTIC_OOS
@@ -8039,7 +8093,7 @@ static void motor_old_test_work(struct work_struct *work)
 {
     struct aw8697 *aw8697 = container_of(work, struct aw8697, motor_old_test_work);
 
-    pr_err("%s: motor_old_test_mode = %d. aw8697->gain[0x%02x]\n", __func__, aw8697->motor_old_test_mode, aw8697->gain);
+    //pr_err("%s: motor_old_test_mode = %d. aw8697->gain[0x%02x]\n", __func__, aw8697->motor_old_test_mode, aw8697->gain);
 
     if (aw8697->motor_old_test_mode == MOTOR_OLD_TEST_TRANSIENT) {
         mutex_lock(&aw8697->lock);
@@ -8145,7 +8199,7 @@ static ssize_t aw8697_motor_old_test_store(struct device *dev, struct device_att
         } else if(databuf[0] <= MOTOR_OLD_TEST_ALL_NUM) {
             cancel_work_sync(&aw8697->motor_old_test_work);
             aw8697->motor_old_test_mode = databuf[0];
-            pr_err("%s: motor_old_test_mode = %d.\n", __func__, aw8697->motor_old_test_mode);
+            //pr_err("%s: motor_old_test_mode = %d.\n", __func__, aw8697->motor_old_test_mode);
             schedule_work(&aw8697->motor_old_test_work);
         }
     }
@@ -8411,6 +8465,7 @@ static DEVICE_ATTR(index, S_IWUSR | S_IRUGO, aw8697_index_show, aw8697_index_sto
 static DEVICE_ATTR(vmax, S_IWUSR | S_IRUGO, aw8697_vmax_show, aw8697_vmax_store);
 static DEVICE_ATTR(gain, S_IWUSR | S_IRUGO, aw8697_gain_show, aw8697_gain_store);
 static DEVICE_ATTR(seq, S_IWUSR | S_IRUGO, aw8697_seq_show, aw8697_seq_store);
+static DEVICE_ATTR(level, S_IWUSR | S_IRUGO, aw8697_level_show, aw8697_level_store);
 static DEVICE_ATTR(loop, S_IWUSR | S_IRUGO, aw8697_loop_show, aw8697_loop_store);
 static DEVICE_ATTR(register, S_IWUSR | S_IRUGO, aw8697_reg_show, aw8697_reg_store);
 static DEVICE_ATTR(rtp, S_IWUSR | S_IRUGO, aw8697_rtp_show, aw8697_rtp_store);
@@ -8462,6 +8517,7 @@ static struct attribute *aw8697_vibrator_attributes[] = {
     &dev_attr_index.attr,
     &dev_attr_vmax.attr,
     &dev_attr_gain.attr,
+    &dev_attr_level.attr,
     &dev_attr_seq.attr,
     &dev_attr_loop.attr,
     &dev_attr_register.attr,
@@ -8527,8 +8583,8 @@ static void aw8697_vibrator_work_routine(struct work_struct *work)
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
     aw8697->activate_mode = AW8697_HAPTIC_ACTIVATE_RAM_MODE;
-    pr_err("%s enter, aw8697->state[%d], aw8697->activate_mode[%d], aw8697->ram_vbat_comp[%d]\n",
-                __func__, aw8697->state, aw8697->activate_mode, aw8697->ram_vbat_comp);
+    //pr_err("%s enter, aw8697->state[%d], aw8697->activate_mode[%d], aw8697->ram_vbat_comp[%d]\n",
+                //__func__, aw8697->state, aw8697->activate_mode, aw8697->ram_vbat_comp);
 #endif
     mutex_lock(&aw8697->lock);
     aw8697_haptic_stop(aw8697);

@@ -1,30 +1,26 @@
-#!/bin/bash
+#2. export some environment variable and build the kernel and dtb
 
-#
-# Clone proton-clang toolchain if needed
-#
-if [ ! -d ./toolchain/ ];
-then
-    git clone --depth=1 git@github.com:kdrag0n/proton-clang.git ./toolchain/
-fi
+export SOURCE_ROOT=~/workspace/source
+export DEFCONFIG=vendor/sm8250_defconfig
+export MAKE_PATH=${SOURCE_ROOT}/prebuilts/build-tools/linux-x86/bin/
+export CROSS_COMPILE=${SOURCE_ROOT}/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+export KERNEL_ARCH=arm64
+export KERNEL_DIR=${SOURCE_ROOT}/kernel/android_kernel_realme_sm8250
+export KERNEL_OUT=${KERNEL_DIR}/../kernel_out
+export KERNEL_SRC=${KERNEL_OUT}
+export CLANG_TRIPLE=aarch64-linux-gnu-
+export OUT_DIR=${KERNEL_OUT}
+export ARCH=${KERNEL_ARCH}
+export TARGET_INCLUDES=${TARGET_KERNEL_MAKE_CFLAGS}
+export TARGET_LINCLUDES=${TARGET_KERNEL_MAKE_LDFLAGS}
 
-KERNEL_DEFCONFIG=vendor/sm8250_defconfig
-DIR=$PWD
-export ARCH=arm64
-export SUBARCH=arm64
-export CLANG_PATH=$DIR/toolchain/bin
-export PATH="$CLANG_PATH:$PATH"
-export CROSS_COMPILE=aarch64-linux-gnu-
-export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-export KBUILD_BUILD_USER=beluga
-export KBUILD_BUILD_HOST=hecker
+export TARGET_KERNEL_MAKE_ENV+="CC=${SOURCE_ROOT}/prebuilts/clang/host/linux-x86/bin/clang"
 
-echo
-echo "Kernel is going to be built using $KERNEL_DEFCONFIG"
-echo
+cd ${KERNEL_DIR} && \
+${MAKE_PATH}make O=${OUT_DIR} ${TARGET_KERNEL_MAKE_ENV} HOSTLDFLAGS="${TARGET_LINCLUDES}" ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} -j16 vendor/sm8250_defconfig
 
-make clean && make mrproper
+# cd ${KERNEL_DIR} && \
+# ${MAKE_PATH}make O=${OUT_DIR} ${TARGET_KERNEL_MAKE_ENV} HOSTLDFLAGS="${TARGET_LINCLUDES}" ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} menuconfig
 
-make CC=clang AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=out $KERNEL_DEFCONFIG
-
-make CC=clang AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=out -j$(nproc --all)
+cd ${OUT_DIR} && \
+${MAKE_PATH}make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} HOSTCFLAGS="${TARGET_INCLUDES}" HOSTLDFLAGS="${TARGET_LINCLUDES}" O=${OUT_DIR} ${TARGET_KERNEL_MAKE_ENV} -j16

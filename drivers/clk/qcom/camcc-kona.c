@@ -505,7 +505,7 @@ static const struct freq_tbl ftbl_cam_cc_bps_clk_src[] = {
 	F(200000000, P_CAM_CC_PLL0_OUT_ODD, 2, 0, 0),
 	F(400000000, P_CAM_CC_PLL0_OUT_ODD, 1, 0, 0),
 	F(480000000, P_CAM_CC_PLL2_OUT_MAIN, 1, 0, 0),
-	F(600000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
+	F(900000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
 	{ }
 };
 
@@ -515,7 +515,7 @@ static const struct freq_tbl ftbl_cam_cc_bps_clk_src_kona_v2[] = {
 	F(200000000, P_CAM_CC_PLL0_OUT_ODD, 2, 0, 0),
 	F(400000000, P_CAM_CC_PLL0_OUT_ODD, 1, 0, 0),
 	F(480000000, P_CAM_CC_PLL2_OUT_MAIN, 1.5, 0, 0),
-	F(600000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
+	F(900000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
 	{ }
 };
 
@@ -539,7 +539,7 @@ static struct clk_rcg2 cam_cc_bps_clk_src = {
 			[VDD_LOWER] = 200000000,
 			[VDD_LOW] = 400000000,
 			[VDD_LOW_L1] = 480000000,
-			[VDD_NOMINAL] = 600000000},
+			[VDD_NOMINAL] = 900000000},
 	},
 };
 
@@ -817,7 +817,7 @@ static const struct freq_tbl ftbl_cam_cc_fd_core_clk_src[] = {
 	F(19200000, P_BI_TCXO, 1, 0, 0),
 	F(400000000, P_CAM_CC_PLL0_OUT_ODD, 1, 0, 0),
 	F(480000000, P_CAM_CC_PLL2_OUT_MAIN, 1, 0, 0),
-	F(600000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
+	F(900000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
 	{ }
 };
 
@@ -825,7 +825,7 @@ static const struct freq_tbl ftbl_cam_cc_fd_core_clk_src_kona_v2[] = {
 	F(19200000, P_BI_TCXO, 1, 0, 0),
 	F(400000000, P_CAM_CC_PLL0_OUT_ODD, 1, 0, 0),
 	F(480000000, P_CAM_CC_PLL2_OUT_MAIN, 1.5, 0, 0),
-	F(600000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
+	F(900000000, P_CAM_CC_PLL0_OUT_MAIN, 2, 0, 0),
 	{ }
 };
 
@@ -848,7 +848,7 @@ static struct clk_rcg2 cam_cc_fd_core_clk_src = {
 		.rate_max = (unsigned long[VDD_NUM]) {
 			[VDD_LOWER] = 400000000,
 			[VDD_LOW_L1] = 480000000,
-			[VDD_NOMINAL] = 600000000},
+			[VDD_NOMINAL] = 900000000},
 	},
 };
 
@@ -871,7 +871,7 @@ static struct clk_rcg2 cam_cc_icp_clk_src = {
 		.rate_max = (unsigned long[VDD_NUM]) {
 			[VDD_LOWER] = 400000000,
 			[VDD_LOW] = 480000000,
-			[VDD_LOW_L1] = 600000000},
+			[VDD_LOW_L1] = 900000000},
 	},
 };
 
@@ -1118,7 +1118,7 @@ static struct clk_rcg2 cam_cc_jpeg_clk_src = {
 			[VDD_LOWER] = 200000000,
 			[VDD_LOW] = 400000000,
 			[VDD_LOW_L1] = 480000000,
-			[VDD_NOMINAL] = 600000000},
+			[VDD_NOMINAL] = 900000000},
 	},
 };
 
