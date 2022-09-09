@@ -1113,15 +1113,18 @@ static int a6xx_gmu_fw_start(struct kgsl_device *device,
 	/* Pass chipid to GMU FW, must happen before starting GMU */
 
 	/* Keep Core and Major bitfields unchanged */
-	chipid = adreno_dev->chipid & 0xFFFF0000;
+	// Try to Mask Adreno 650 v2 as Adreno 650
+	chipid = 0x06050000;
+	// chipid = adreno_dev->chipid & 0xFFFF0000;
 
 	/*
 	 * Compress minor and patch version into 8 bits
 	 * Bit 15-12: minor version
 	 * Bit 11-8: patch version
 	 */
-	chipid = chipid | (ADRENO_CHIPID_MINOR(adreno_dev->chipid) << 12)
-			| (ADRENO_CHIPID_PATCH(adreno_dev->chipid) << 8);
+	chipid = 0x06050000; // Try to mask Adreno 650 v2 as Adreno 650
+	// chipid = chipid | (ADRENO_CHIPID_MINOR(adreno_dev->chipid) << 12)
+	// 		| (ADRENO_CHIPID_PATCH(adreno_dev->chipid) << 8);
 
 	gmu_core_regwrite(device, A6XX_GMU_HFI_SFR_ADDR, chipid);
 

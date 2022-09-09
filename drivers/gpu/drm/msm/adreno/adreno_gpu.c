@@ -40,10 +40,12 @@ int adreno_get_param(struct msm_gpu *gpu, uint32_t param, uint64_t *value)
 		*value = 0x100000;
 		return 0;
 	case MSM_PARAM_CHIP_ID:
-		*value = adreno_gpu->rev.patchid |
-				(adreno_gpu->rev.minor << 8) |
-				(adreno_gpu->rev.major << 16) |
-				(adreno_gpu->rev.core << 24);
+		// Try to mask Adreno 650 v2 as Adreno 650
+		*value = 0x06050000;
+		// *value = adreno_gpu->rev.patchid |
+		// 		(adreno_gpu->rev.minor << 8) |
+		// 		(adreno_gpu->rev.major << 16) |
+		// 		(adreno_gpu->rev.core << 24);
 		return 0;
 	case MSM_PARAM_MAX_FREQ:
 		*value = adreno_gpu->base.fast_rate;

@@ -292,8 +292,7 @@ void msm_iounmap(struct platform_device *pdev, void __iomem *addr)
 
 void msm_writel(u32 data, void __iomem *addr)
 {
-	if (reglog)
-		pr_debug("IO:W %pK %08x\n", addr, data);
+	pr_debug("IO:W %pK %08x\n", addr, data);
 	writel(data, addr);
 }
 

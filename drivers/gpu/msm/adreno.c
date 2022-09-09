@@ -834,16 +834,17 @@ static void adreno_update_soc_hw_revision_quirks(
 	if (node == NULL)
 		node = pdev->dev.of_node;
 
+	adreno_dev->chipid = 0x06050000; // Try to mask Adreno 650 v2 as Adreno 650
 	/* get chip id, fall back to parent if revision node does not have it */
-	if (of_property_read_u32(node, "qcom,chipid", &adreno_dev->chipid)) {
-		if (of_property_read_u32(pdev->dev.of_node,
-				"qcom,chipid", &adreno_dev->chipid)) {
-			dev_crit(KGSL_DEVICE(adreno_dev)->dev,
-				"No GPU chip ID was specified\n");
-			BUG();
-			return;
-		}
-	}
+	// if (of_property_read_u32(node, "qcom,chipid", &adreno_dev->chipid)) {
+	// 	if (of_property_read_u32(pdev->dev.of_node,
+	// 			"qcom,chipid", &adreno_dev->chipid)) {
+	// 		dev_crit(KGSL_DEVICE(adreno_dev)->dev,
+	// 			"No GPU chip ID was specified\n");
+	// 		BUG();
+	// 		return;
+	// 	}
+	// }
 
 	/* update quirk */
 	for (i = 0; i < ARRAY_SIZE(adreno_quirks); i++) {
@@ -859,11 +860,11 @@ static int adreno_identify_gpu(struct adreno_device *adreno_dev)
 	struct adreno_gpudev *gpudev;
 	int i;
 
-	adreno_dev->gpucore = _get_gpu_core(adreno_dev->chipid);
+	adreno_dev->gpucore = _get_gpu_core(0x06050000);
 
 	if (adreno_dev->gpucore == NULL) {
 		dev_crit(&device->pdev->dev,
-			"Unknown GPU chip ID %8.8X\n", adreno_dev->chipid);
+			"Unknown GPU chip ID %8.8X\n", 0x06050000);
 		return -ENODEV;
 	}
 
@@ -3316,7 +3317,7 @@ static bool adreno_is_rbbm_batch_reg(struct adreno_device *adreno_dev,
 	unsigned int offsetwords)
 {
 	if ((adreno_is_a650(adreno_dev) &&
-		ADRENO_CHIPID_PATCH(adreno_dev->chipid) < 2) ||
+		ADRENO_CHIPID_PATCH(0x06050000) < 2) ||
 		adreno_is_a620v1(adreno_dev)) {
 		if (((offsetwords >= 0x0) && (offsetwords <= 0x3FF)) ||
 		((offsetwords >= 0x4FA) && (offsetwords <= 0x53F)) ||
@@ -3923,7 +3924,7 @@ static unsigned int adreno_gpuid(struct kgsl_device *device,
 	 */
 
 	if (chipid != NULL)
-		*chipid = adreno_dev->chipid;
+		*chipid = 0x06050000;
 
 	/*
 	 * Standard KGSL gpuid format:
@@ -4073,10 +4074,10 @@ static void adreno_gpu_model(struct kgsl_device *device, char *str,
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 
 	snprintf(str, bufsz, "Adreno%d%d%dv%d",
-			ADRENO_CHIPID_CORE(adreno_dev->chipid),
-			 ADRENO_CHIPID_MAJOR(adreno_dev->chipid),
-			 ADRENO_CHIPID_MINOR(adreno_dev->chipid),
-			 ADRENO_CHIPID_PATCH(adreno_dev->chipid) + 1);
+			ADRENO_CHIPID_CORE(0x06050000),
+			 ADRENO_CHIPID_MAJOR(0x06050000),
+			 ADRENO_CHIPID_MINOR(0x06050000),
+			 ADRENO_CHIPID_PATCH(0x06050000) + 1);
 }
 
 static bool adreno_is_hwcg_on(struct kgsl_device *device)

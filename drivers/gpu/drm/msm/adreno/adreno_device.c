@@ -145,6 +145,7 @@ static inline bool _rev_match(uint8_t entry, uint8_t id)
 	return (entry == ANY_ID) || (entry == id);
 }
 
+// Maybe change for Kona v2
 const struct adreno_info *adreno_info(struct adreno_rev rev)
 {
 	int i;
@@ -248,13 +249,13 @@ static int find_chipid(struct device *dev, struct adreno_rev *rev)
 			return 0;
 		}
 	}
-
+	chipid = 0x06050000; // Try to mask Adreno 650 v2 as Adreno 650
 	/* and if that fails, fall back to legacy "qcom,chipid" property: */
-	ret = of_property_read_u32(node, "qcom,chipid", &chipid);
-	if (ret) {
-		dev_err(dev, "could not parse qcom,chipid: %d\n", ret);
-		return ret;
-	}
+	//ret = of_property_read_u32(node, "qcom,chipid", &chipid);
+	// if (ret) {
+	// 	dev_err(dev, "could not parse qcom,chipid: %d\n", ret);
+	// 	return ret;
+	// }
 
 	rev->core = (chipid >> 24) & 0xff;
 	rev->major = (chipid >> 16) & 0xff;
