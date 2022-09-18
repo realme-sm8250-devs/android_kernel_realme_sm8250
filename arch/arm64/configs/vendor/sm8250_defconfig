@@ -6262,6 +6262,9 @@ CONFIG_CC_HAS_SANCOV_TRACE_PC=y
 # CONFIG_KCOV is not set
 # CONFIG_DEBUG_SHIRQ is not set
 
+## WAKELOCKS
+CONFIG_BOEFFLA_WL_BLOCKER=y
+
 #
 # Debug Lockups and Hangs
 #
