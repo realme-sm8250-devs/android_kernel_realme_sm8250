@@ -95,8 +95,8 @@ __efistub_memmove		= memmove;
 __efistub_memset		= __pi_memset;
 __efistub_strlen		= strlen;
 __efistub_strnlen		= strnlen;
-__efistub_strcmp		= strcmp;
-__efistub_strncmp		= strncmp;
+__efistub_strcmp		= __pi_strcmp;
+__efistub_strncmp		= __pi_strncmp;
 __efistub_strrchr		= strrchr;
 __efistub___flush_dcache_area	= __pi___flush_dcache_area;
 
