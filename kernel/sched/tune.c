@@ -16,7 +16,7 @@ extern struct reciprocal_value schedtune_spc_rdiv;
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
 static DEFINE_MUTEX(stune_boost_mutex);
 static struct schedtune *getSchedtune(char *st_name);
-static int dynamic_boost_write(struct schedtune *st, int boost);
+static int dynamic_boost(struct schedtune *st, int boost);
 #endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 /* We hold schedtune boost in effect for at least this long */
@@ -125,6 +125,9 @@ struct schedtune {
 	 * the value when Dynamic SchedTune Boost is reset.
 	 */
 	int boost_default;
+
+	/* Dynamic boost value for tasks on that SchedTune CGroup */
+	int dynamic_boost;
 #endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 };
 
@@ -164,6 +167,7 @@ root_schedtune = {
 	.prefer_idle = 0,
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
 	.boost_default = 0,
+	.dynamic_boost = 0,
 #endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 };
 
@@ -712,10 +716,84 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		return -EINVAL;
 
 	st->boost = boost;
-
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	st->boost_default = boost;
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 	/* Update CPU boost */
 	schedtune_boostgroup_update(st->idx, st->boost);
+	return 0;
+}
 
+
+#ifdef CONFIG_STUNE_ASSIST
+static int sched_boost_override_write_wrapper(struct cgroup_subsys_state *css,
+					      struct cftype *cft, u64 override)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return sched_boost_override_write(css, cft, override);
+}
+
+#ifdef CONFIG_SCHED_WALT
+static int sched_colocate_write_wrapper(struct cgroup_subsys_state *css,
+					struct cftype *cft, u64 colocate)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return sched_colocate_write(css, cft, colocate);
+}
+#endif
+
+static int boost_write_wrapper(struct cgroup_subsys_state *css,
+			       struct cftype *cft, s64 boost)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return boost_write(css, cft, boost);
+}
+
+static int prefer_idle_write_wrapper(struct cgroup_subsys_state *css,
+				     struct cftype *cft, u64 prefer_idle)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return prefer_idle_write(css, cft, prefer_idle);
+}
+#endif
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static s64
+dynamic_boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
+{
+	struct schedtune *st = css_st(css);
+
+	return st->dynamic_boost;
+}
+
+static int
+dynamic_boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
+	    s64 dynamic_boost)
+{
+	struct schedtune *st = css_st(css);
+	st->dynamic_boost = dynamic_boost;
+
+	return 0;
+}
+#endif // CONFIG_DYNAMIC_STUNE_BOOST
+
+static u64 prefer_high_cap_read(struct cgroup_subsys_state *css,
+				struct cftype *cft)
+{
+	return 0;
+}
+
+static int prefer_high_cap_write(struct cgroup_subsys_state *css,
+				 struct cftype *cft, u64 prefer_high_cap)
+{
 	return 0;
 }
 
@@ -742,7 +820,13 @@ static struct cftype files[] = {
 		.read_u64 = prefer_idle_read,
 		.write_u64 = prefer_idle_write,
 	},
-
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	{
+		.name = "dynamic_boost",
+		.read_s64 = dynamic_boost_read,
+		.write_s64 = dynamic_boost_write,
+	},
+#endif // CONFIG_DYNAMIC_STUNE_BOOST
 	{ }	/* terminate */
 };
 
@@ -883,7 +967,7 @@ static struct schedtune *getSchedtune(char *st_name)
 	return NULL;
 }
 
-static int dynamic_boost_write(struct schedtune *st, int boost)
+static int dynamic_boost(struct schedtune *st, int boost)
 {
 	int ret;
 	/* Backup boost_default */
@@ -915,7 +999,7 @@ static struct schedtune *getSchedtune(char *st_name)
 	return NULL;
 }
 
-static int dynamic_boost_write(struct schedtune *st, int boost)
+static int dynamic_boost(struct schedtune *st, int boost)
 {
 	int ret;
 	/* Backup boost_default */
@@ -941,7 +1025,7 @@ int do_stune_boost(char *st_name, int boost)
 
 	/* Boost if new value is greater than current */
 	if (boost > st->boost)
-		ret = dynamic_boost_write(st, boost);
+		ret = dynamic_boost(st, boost);
 
 	mutex_unlock(&stune_boost_mutex);
 
@@ -957,7 +1041,7 @@ int reset_stune_boost(char *st_name)
 		return -EINVAL;
 
 	mutex_lock(&stune_boost_mutex);
-	ret = dynamic_boost_write(st, st->boost_default);
+	ret = dynamic_boost(st, st->boost_default);
 	mutex_unlock(&stune_boost_mutex);
 
 	return ret;
