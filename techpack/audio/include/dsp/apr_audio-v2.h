@@ -10819,7 +10819,8 @@ struct cmd_set_topologies {
 	/* Memory map handle returned by mem map command */
 	u32		payload_size;
 	/* Size in bytes of the variable payload in shared memory */
-} __packed;
+};
+// Remove packed structure because give problem with clang 14, add __packed to struct
 
 /* This module represents the Rx processing of Feedback speaker protection.
  * It contains the excursion control, thermal protection,
@@ -12703,7 +12704,8 @@ struct afe_param_id_group_device_tdm_cfg {
 	 * Bits 0..31 corresponding to slot 0..31
 	 * @values 1 to 2^32 -1
 	 */
-} __packed;
+};
+// Removed packed structure in this point
 
 /*  Payload of the #AFE_PARAM_ID_GROUP_DEVICE_ENABLE
  * parameter, which enables or
