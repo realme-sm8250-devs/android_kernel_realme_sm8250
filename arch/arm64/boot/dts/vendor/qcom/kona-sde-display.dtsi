@@ -21,7 +21,17 @@
 #include "dsi-panel-sim-dualmipi-dsc375-cmd.dtsi"
 #include "dsi-panel-sim-sec-hd-cmd.dtsi"
 #include "dsi-panel-xrsmrtvwr-jdi-dual-video.dtsi"
-#include "dsi-panel-r66451-dsc-fhd-plus-144hz-cmd.dtsi"
+#include "dsi-panel-samsung_oneplus_dsc.dtsi"
+#include "dsi-panel-oppo19065-samsung-1440-3168-dsc-cmd.dtsi"
+#include "pxlw-iris5-cfg-oppo19065_samsung_1440_3168_cmd.dtsi"
+#include "dsi-panel-oplus20061-samsung-1440-3216-dsc-cmd.dtsi"
+#include "dsi-panel-oplus20061-samsung-1440-3216-dsc-cmd-evt.dtsi"
+#include "dsi-panel-oplus20061-samsung-1440-3216-dsc-cmd-dvt.dtsi"
+#include "dsi-panel-oplus20061-samsung-1440-3216-dsc-cmd-dvt-id07.dtsi"
+#include "dsi-panel-oplus20061-samsung-1440-3216-dsc-cmd-dvt-id09.dtsi"
+#include "dsi-panel-oppo21615-samsung-amb655xl16-1080-2400-dsc-cmd.dtsi"
+#include "dsi-panel-oppo21619-samsung-ams662zs01-1080-2400-dsc-cmd.dtsi"
+#include "dsi-panel-oppo21619-samsung-ams662zs01-1080-2400-dvt-dsc-cmd.dtsi"
 #include <dt-bindings/clock/mdss-7nm-pll-clk.h>
 
 &tlmm {
@@ -49,6 +59,24 @@
 		};
 	};
 
+	/* #if defined(CONFIG_PXLW_IRIS5) */
+	dsi_iris_pwr_supply: dsi_iris_pwr_supply {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+/*
+		qcom,panel-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "px_v18r";
+			qcom,supply-min-voltage = <1800000>;
+			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-enable-load = <62000>;
+			qcom,supply-disable-load = <80>;
+			qcom,supply-post-on-sleep = <0>;
+		};
+*/
+	};
+	/* #endif */
 	dsi_panel_pwr_supply: dsi_panel_pwr_supply {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -60,14 +88,14 @@
 			qcom,supply-max-voltage = <1800000>;
 			qcom,supply-enable-load = <62000>;
 			qcom,supply-disable-load = <80>;
-			qcom,supply-post-on-sleep = <20>;
+			qcom,supply-post-on-sleep = <0>;
 		};
 
 		qcom,panel-supply-entry@1 {
 			reg = <1>;
-			qcom,supply-name = "vdd";
-			qcom,supply-min-voltage = <3300000>;
-			qcom,supply-max-voltage = <3300000>;
+			qcom,supply-name = "vci";
+			qcom,supply-min-voltage = <3008000>;
+			qcom,supply-max-voltage = <3008000>;
 			qcom,supply-enable-load = <857000>;
 			qcom,supply-disable-load = <0>;
 			qcom,supply-post-on-sleep = <0>;
@@ -75,24 +103,15 @@
 
 		qcom,panel-supply-entry@2 {
 			reg = <2>;
-			qcom,supply-name = "lab";
-			qcom,supply-min-voltage = <4600000>;
-			qcom,supply-max-voltage = <6000000>;
-			qcom,supply-enable-load = <100000>;
-			qcom,supply-disable-load = <100>;
+			qcom,supply-name = "vout";
+			qcom,supply-min-voltage = <1152000>;
+			qcom,supply-max-voltage = <1152000>;
+			qcom,supply-enable-load = <62000>;
+			qcom,supply-disable-load = <80>;
+			qcom,supply-post-on-sleep = <0>;
 		};
 
-		qcom,panel-supply-entry@3 {
-			reg = <3>;
-			qcom,supply-name = "ibb";
-			qcom,supply-min-voltage = <4600000>;
-			qcom,supply-max-voltage = <6000000>;
-			qcom,supply-enable-load = <100000>;
-			qcom,supply-disable-load = <100>;
-			qcom,supply-post-on-sleep = <20>;
-		};
 	};
-
 	dsi_panel_pwr_supply_lab_ibb: dsi_panel_pwr_supply_lab_ibb {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -157,11 +176,15 @@
 		regulator-min-microvolt = <5500000>;
 		regulator-max-microvolt = <5500000>;
 		regulator-enable-ramp-delay = <233>;
-		gpio = <&tlmm 61 0>;
+		//#ifndef OPLUS_FEATURE_CHG_BASIC//huangtongfeng@ProDrv.CHG,add 2019/06/21 for vib aw8697
+		//gpio = <&tlmm 61 0>;
+		//#endif
 		enable-active-high;
 		regulator-boot-on;
-		pinctrl-names = "default";
-		pinctrl-0 = <&display_panel_avdd_default>;
+		//#ifndef OPLUS_FEATURE_CHG_BASIC//huangtongfeng@ProDrv.CHG,add 2019/06/21 for vib aw8697
+		//pinctrl-names = "default";
+		//pinctrl-0 = <&display_panel_avdd_default>;
+		//#endif
 	};
 
 	sde_dsi: qcom,dsi-display-primary {
@@ -190,7 +213,12 @@
 			 <&mdss_dsi1_pll SHADOW_BYTECLK_SRC_1_CLK>,
 			 <&mdss_dsi1_pll SHADOW_PCLK_SRC_1_CLK>,
 			 <&mdss_dsi1_pll SHADOW_CPHY_BYTECLK_SRC_1_CLK>,
-			 <&mdss_dsi1_pll SHADOW_CPHY_PCLK_SRC_1_CLK>;
+			 <&mdss_dsi1_pll SHADOW_CPHY_PCLK_SRC_1_CLK>,
+			 <&clock_rpmh RPMH_LN_BB_CLK2>;
+
+			 /* #if defined(CONFIG_PXLW_IRIS5) */
+			 /*TODO: <&rpmhcc RPMH_LN_BB_CLK2>;*/
+			 /* #endif */
 
 		clock-names = "mux_byte_clk0", "mux_pixel_clk0",
 				"src_byte_clk0", "src_pixel_clk0",
@@ -201,7 +229,11 @@
 				"src_byte_clk1", "src_pixel_clk1",
 				"cphy_byte_clk1", "cphy_pixel_clk1",
 				"shadow_byte_clk1", "shadow_pixel_clk1",
-				"shadow_cphybyte_clk1", "shadow_cphypixel_clk1";
+				"shadow_cphybyte_clk1", "shadow_cphypixel_clk1",
+				"pw_bb_clk2";
+				/* #if defined(CONFIG_PXLW_IRIS5) */
+				/*TODO: "ln_bb_clk2"*/
+				/* #endif */
 
 		pinctrl-names = "panel_active", "panel_suspend";
 		pinctrl-0 = <&sde_dsi_active &sde_te_active>;
@@ -210,14 +242,17 @@
 		qcom,platform-te-gpio = <&tlmm 66 0>;
 		qcom,panel-te-source = <0>;
 
+		//px_v18r-supply = <&pm8150_l7>;
 		vddio-supply = <&pm8150_l14>;
-		vdd-supply = <&pm8150a_l11>;
+		vci-supply = <&pm8150_l13>;
+		vout-supply = <&L2C>;
 		avdd-supply = <&display_panel_avdd>;
-		lab-supply = <&ab_vreg>;
-		ibb-supply = <&ibb_vreg>;
 
 		qcom,mdp = <&mdss_mdp>;
-		qcom,dsi-default-panel = <&dsi_sw43404_amoled_cmd>;
+		qcom,dsi-default-panel = <&dsi_oppo21619samsung_ams662zs01_1080_2400_cmd
+						&dsi_oppo21619samsung_ams662zs01_1080_2400_cmd_dvt>;
+		//pxlw,iris-lightup-config = <&mdss_iris_cfg_oppo19065_samsung_1440_3168_dsc_cmd>;
+		pxlw,soft-iris-enable;
 	};
 
 	sde_dsi1: qcom,dsi-display-secondary {
@@ -247,10 +282,13 @@
 		qcom,platform-te-gpio = <&tlmm 67 0>;
 		qcom,panel-te-source = <1>;
 
+		//px_v18r-supply = <&pm8150_l7>;
 		vddio-supply = <&pm8150_l14>;
 		vdd-supply = <&pm8150a_l11>;
-		avdd-supply = <&display_panel_avdd>;
+		vout-supply = <&L2C>;
 
+		avdd-supply = <&display_panel_avdd>;
+		qcom,dsi-default-panel = <&dsi_oppo19065_samsung_1440_3168_dsc_cmd>;
 		qcom,mdp = <&mdss_mdp>;
 	};
 
@@ -259,11 +297,9 @@
 		cell-index = <0>;
 		label = "wb_display";
 	};
-
 	msm_notifier: qcom,msm_notifier@0 {
 		compatible = "qcom,msm-notifier";
-		panel = <&dsi_sw43404_amoled_cmd &dsi_sharp_qsync_wqhd_cmd
-			&dsi_dual_sim_dsc_375_cmd>;
+		panel = <&dsi_oppo19065_samsung_1440_3168_dsc_cmd>;
 	};
 };
 
@@ -920,25 +956,6 @@
 			qcom,default-topology-index = <0>;
 			qcom,panel-roi-alignment = <720 40 720 40 720 40>;
 			qcom,partial-update-enabled = "single_roi";
-		};
-	};
-};
-
-&dsi_r66451_amoled_144hz_cmd {
-	qcom,ulps-enabled;
-	qcom,esd-check-enabled;
-	qcom,mdss-dsi-panel-status-check-mode = "reg_read";
-	qcom,mdss-dsi-panel-status-command = [06 01 00 01 00 00 01 0a];
-	qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode";
-	qcom,mdss-dsi-panel-status-value = <0x1c>;
-	qcom,mdss-dsi-panel-status-read-length = <1>;
-	qcom,dsi-select-clocks = "mux_byte_clk0", "mux_pixel_clk0";
-	qcom,mdss-dsi-display-timings {
-		timing@0 {
-			qcom,mdss-dsi-panel-phy-timings = [00 22 09 09 19 17 09
-					09 09 02 04 00 1d 0e];
-			qcom,display-topology = <2 2 1>;
-			qcom,default-topology-index = <0>;
 		};
 	};
 };
