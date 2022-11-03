@@ -91,7 +91,7 @@ static struct kernel_param_ops zswap_enabled_param_ops = {
 module_param_cb(enabled, &zswap_enabled_param_ops, &zswap_enabled, 0644);
 
 /* Crypto compressor to use */
-#define ZSWAP_COMPRESSOR_DEFAULT "lzo"
+#define ZSWAP_COMPRESSOR_DEFAULT "lz4"
 static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
 static int zswap_compressor_param_set(const char *,
 				      const struct kernel_param *);
@@ -219,8 +219,8 @@ static const struct zpool_ops zswap_zpool_ops = {
 
 static bool zswap_is_full(void)
 {
-	return totalram_pages * zswap_max_pool_percent / 100 <
-		DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
+	return totalram_pages() * zswap_max_pool_percent / 100 <
+			DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
 }
 
 static void zswap_update_total_size(void)

@@ -418,6 +418,21 @@
 				qcom,hw-settle-time = <200>;
 				qcom,pre-scaling = <1 1>;
 			};
+			usb_temp_adc {
+				reg = <ADC_AMUX_THM4_PU2>;
+				label = "usb_temp_adc";
+				qcom,pre-scaling = <1 1>;
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+			};
+			// #endif
+			board_id {
+				reg = <ADC_GPIO1>;
+				label = "board_id_vdata";
+				qcom,ratiometric;
+				qcom,pre-scaling = <1 1>;
+			};
+
 		};
 
 		pm8150b_adc_tm: adc_tm@3500 {

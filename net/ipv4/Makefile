@@ -20,9 +20,6 @@ obj-$(CONFIG_BPFILTER) += bpfilter/
 
 obj-$(CONFIG_NET_IP_TUNNEL) += ip_tunnel.o
 obj-$(CONFIG_SYSCTL) += sysctl_net_ipv4.o
-#ifdef OPLUS_BUG_STABILITY
-#obj-$(CONFIG_SYSFS) += sysfs_net_ipv4.o
-#endif /* OPLUS_BUG_STABILITY */
 obj-$(CONFIG_PROC_FS) += proc.o
 obj-$(CONFIG_IP_MULTIPLE_TABLES) += fib_rules.o
 obj-$(CONFIG_IP_MROUTE) += ipmr.o
@@ -51,6 +48,7 @@ obj-$(CONFIG_INET_TCP_DIAG) += tcp_diag.o
 obj-$(CONFIG_INET_UDP_DIAG) += udp_diag.o
 obj-$(CONFIG_INET_RAW_DIAG) += raw_diag.o
 obj-$(CONFIG_TCP_CONG_BBR) += tcp_bbr.o
+obj-$(CONFIG_TCP_CONG_BBR2) += tcp_bbr2.o
 obj-$(CONFIG_TCP_CONG_BIC) += tcp_bic.o
 obj-$(CONFIG_TCP_CONG_CDG) += tcp_cdg.o
 obj-$(CONFIG_TCP_CONG_CUBIC) += tcp_cubic.o

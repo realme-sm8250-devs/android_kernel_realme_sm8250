@@ -3463,6 +3463,76 @@ static void quirk_no_bus_reset(struct pci_dev *dev)
 	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
 }
 
+static bool acs_on_downstream;
+static bool acs_on_multifunction;
+
+#define NUM_ACS_IDS 16
+struct acs_on_id {
+	unsigned short vendor;
+	unsigned short device;
+};
+static struct acs_on_id acs_on_ids[NUM_ACS_IDS];
+static u8 max_acs_id;
+
+static __init int pcie_acs_override_setup(char *p)
+{
+	if (!p)
+		return -EINVAL;
+
+	while (*p) {
+		if (!strncmp(p, "downstream", 10))
+			acs_on_downstream = true;
+		if (!strncmp(p, "multifunction", 13))
+			acs_on_multifunction = true;
+		if (!strncmp(p, "id:", 3)) {
+			char opt[5];
+			int ret;
+			long val;
+
+			if (max_acs_id >= NUM_ACS_IDS - 1) {
+				pr_warn("Out of PCIe ACS override slots (%d)\n",
+						NUM_ACS_IDS);
+				goto next;
+			}
+
+			p += 3;
+			snprintf(opt, 5, "%s", p);
+			ret = kstrtol(opt, 16, &val);
+			if (ret) {
+				pr_warn("PCIe ACS ID parse error %d\n", ret);
+				goto next;
+			}
+			acs_on_ids[max_acs_id].vendor = val;
+
+			p += strcspn(p, ":");
+			if (*p != ':') {
+				pr_warn("PCIe ACS invalid ID\n");
+				goto next;
+			}
+
+			p++;
+			snprintf(opt, 5, "%s", p);
+			ret = kstrtol(opt, 16, &val);
+			if (ret) {
+				pr_warn("PCIe ACS ID parse error %d\n", ret);
+				goto next;
+			}
+			acs_on_ids[max_acs_id].device = val;
+			max_acs_id++;
+		}
+next:
+		p += strcspn(p, ",");
+		if (*p == ',')
+			p++;
+	}
+
+	if (acs_on_downstream || acs_on_multifunction || max_acs_id)
+		pr_warn("Warning: PCIe ACS overrides enabled; This may allow non-IOMMU protected peer-to-peer DMA\n");
+
+	return 0;
+}
+early_param("pcie_acs_override", pcie_acs_override_setup);
+
 /*
  * Some Atheros AR9xxx and QCA988x chips do not behave after a bus reset.
  * The device will throw a Link Down error on AER-capable systems and

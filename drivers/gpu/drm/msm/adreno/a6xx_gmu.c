@@ -456,6 +456,7 @@ static void a6xx_gmu_power_config(struct a6xx_gmu *gmu)
 			A6XX_GMU_PWR_COL_INTER_FRAME_CTRL_SPTPRAC_POWER_CONTROL_ENABLE);
 	}
 
+	// Maybe to change konav2
 	/* Enable RPMh GPU client */
 	gmu_rmw(gmu, REG_A6XX_GMU_RPMH_CTRL, 0,
 		A6XX_GMU_RPMH_CTRL_RPMH_INTERFACE_ENABLE |
@@ -521,10 +522,11 @@ static int a6xx_gmu_fw_start(struct a6xx_gmu *gmu, unsigned int state)
 	gmu_write(gmu, REG_A6XX_GMU_AHB_FENCE_RANGE_0,
 		(1 << 31) | (0xa << 18) | (0xa0));
 
-	chipid = adreno_gpu->rev.core << 24;
-	chipid |= adreno_gpu->rev.major << 16;
-	chipid |= adreno_gpu->rev.minor << 12;
-	chipid |= adreno_gpu->rev.patchid << 8;
+	chipid = 0x06050000 // Try to mask Adreno 650 v2 as Adreno 650
+	// chipid = adreno_gpu->rev.core << 24;
+	// chipid |= adreno_gpu->rev.major << 16;
+	// chipid |= adreno_gpu->rev.minor << 12;
+	// chipid |= adreno_gpu->rev.patchid << 8;
 
 	gmu_write(gmu, REG_A6XX_GMU_HFI_SFR_ADDR, chipid);
 

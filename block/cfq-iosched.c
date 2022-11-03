@@ -23,16 +23,16 @@
  * tunables
  */
 /* max queue in one round of service */
-static const int cfq_quantum = 8;
+static const int cfq_quantum = 16;  /* default 8 */
 static const u64 cfq_fifo_expire[2] = { NSEC_PER_SEC / 4, NSEC_PER_SEC / 8 };
 /* maximum backwards seek, in KiB */
 static const int cfq_back_max = 16 * 1024;
 /* penalty of a backwards seek */
-static const int cfq_back_penalty = 2;
+static const int cfq_back_penalty = 1; /* default 2 */
 static const u64 cfq_slice_sync = NSEC_PER_SEC / 10;
 static u64 cfq_slice_async = NSEC_PER_SEC / 25;
 static const int cfq_slice_async_rq = 2;
-static u64 cfq_slice_idle = NSEC_PER_SEC / 125;
+static u64 cfq_slice_idle = 0; /* NSEC_PER_SEC / 125 ms */
 static u64 cfq_group_idle = NSEC_PER_SEC / 125;
 static const u64 cfq_target_latency = (u64)NSEC_PER_SEC * 3/10; /* 300 ms */
 static const int cfq_hist_divisor = 4;
@@ -65,6 +65,7 @@ static const int cfq_hist_divisor = 4;
 #define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elv.priv[1])
 
 static struct kmem_cache *cfq_pool;
+
 
 #define CFQ_PRIO_LISTS		IOPRIO_BE_NR
 #define cfq_class_idle(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_IDLE)

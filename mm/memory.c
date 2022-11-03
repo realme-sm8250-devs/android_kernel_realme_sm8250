@@ -1664,6 +1664,7 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long start,
 	mmu_notifier_invalidate_range_end(mm, start, end);
 	tlb_finish_mmu(&tlb, start, end);
 }
+EXPORT_SYMBOL_GPL(zap_page_range);
 
 /**
  * zap_page_range_single - remove user pages in a given range
@@ -4594,7 +4595,11 @@ int __handle_speculative_fault(struct mm_struct *mm, unsigned long address,
 	 * because vm_next and vm_prev must be safe. This can't be guaranteed
 	 * in the speculative path.
 	 */
-	if (unlikely(vma_is_anonymous(vmf.vma) && !vmf.vma->anon_vma)) {
+	if (unlikely((vma_is_anonymous(vmf.vma) && !vmf.vma->anon_vma) ||
+		(!vma_is_anonymous(vmf.vma) &&
+			!(vmf.vma->vm_flags & VM_SHARED) &&
+			(vmf.flags & FAULT_FLAG_WRITE) &&
+			!vmf.vma->anon_vma))) {
 		trace_spf_vma_notsup(_RET_IP_, vmf.vma, address);
 		return VM_FAULT_RETRY;
 	}

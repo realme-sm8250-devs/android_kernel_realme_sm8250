@@ -1346,7 +1346,10 @@ struct task_struct {
 
 	struct tlbflush_unmap_batch	tlb_ubc;
 
-	struct rcu_head			rcu;
+	union {
+		refcount_t		rcu_users;
+		struct rcu_head		rcu;
+	};
 
 	/* Cache last used pipe for splice(): */
 	struct pipe_inode_info		*splice_pipe;
@@ -2077,6 +2080,11 @@ extern long sched_getaffinity(pid_t pid, struct cpumask *mask);
 #ifndef TASK_SIZE_OF
 #define TASK_SIZE_OF(tsk)	TASK_SIZE
 #endif
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+int do_stune_boost(char *st_name, int boost);
+int reset_stune_boost(char *st_name);
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 #ifdef CONFIG_RSEQ
 

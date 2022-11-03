@@ -639,6 +639,7 @@ static void set_isdb_breakpoint_registers(struct kgsl_device *device)
 	isdb_write(device->qdss_gfx_virt, 0x5000);
 }
 
+
 /**
  * kgsl_snapshot() - construct a device snapshot
  * @device: device to snapshot
@@ -756,6 +757,7 @@ void kgsl_device_snapshot(struct kgsl_device *device,
 	dev_err(device->dev, "%s snapshot created at pa %pa++0x%zx\n",
 			gmu_fault ? "GMU" : "GPU", &pa, snapshot->size);
 
+
 	if (device->skip_ib_capture)
 		BUG_ON(device->force_panic);
 
@@ -835,6 +837,8 @@ static int snapshot_release(struct kgsl_device *device,
 	return ret;
 }
 
+
+
 /* Dump the sysfs binary data to the user */
 static ssize_t snapshot_show(struct file *filep, struct kobject *kobj,
 	struct bin_attribute *attr, char *buf, loff_t off,
@@ -845,6 +849,7 @@ static ssize_t snapshot_show(struct file *filep, struct kobject *kobj,
 	struct kgsl_snapshot_section_header head;
 	struct snapshot_obj_itr itr;
 	int ret = 0;
+
 
 	mutex_lock(&device->mutex);
 	snapshot = device->snapshot;
@@ -1064,6 +1069,8 @@ static SNAPSHOT_ATTR(snapshot_legacy, 0644, snapshot_legacy_show,
 static SNAPSHOT_ATTR(skip_ib_capture, 0644, skip_ib_capture_show,
 		skip_ib_capture_store);
 
+
+
 static ssize_t snapshot_sysfs_show(struct kobject *kobj,
 	struct attribute *attr, char *buf)
 {
@@ -1157,6 +1164,8 @@ int kgsl_device_snapshot_init(struct kgsl_device *device)
 	device->snapshot_crashdumper = true;
 	device->snapshot_legacy = false;
 
+
+
 	/*
 	 * Set this to false so that we only ever keep the first snapshot around
 	 * If we want to over-write with a gmu snapshot, then set it to true
@@ -1174,6 +1183,7 @@ int kgsl_device_snapshot_init(struct kgsl_device *device)
 		return ret;
 
 	ret = sysfs_create_files(&device->snapshot_kobj, snapshot_attrs);
+
 
 	return ret;
 }
@@ -1200,6 +1210,7 @@ void kgsl_device_snapshot_close(struct kgsl_device *device)
 	device->snapshot_faultcount = 0;
 	device->force_panic = false;
 	device->snapshot_crashdumper = true;
+
 }
 EXPORT_SYMBOL(kgsl_device_snapshot_close);
 

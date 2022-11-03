@@ -24,9 +24,9 @@
 	gpu_opp_table: gpu-opp-table {
 		compatible = "operating-points-v2";
 
-		opp-480000000 {
-			opp-hz = /bits/ 64 <480000000>;
-			opp-microvolt = <RPMH_REGULATOR_LEVEL_SVS_L1>;
+		opp-800000000 {
+			opp-hz = /bits/ 64 <800000000>;
+			opp-microvolt = <RPMH_REGULATOR_LEVEL_TURBO>;
 		};
 
 		opp-381000000 {
@@ -72,7 +72,8 @@
 		qcom,gpu-qdss-stm = <0x161c0000 0x40000>; /* base addr, size */
 
 		#cooling-cells = <2>;
-		qcom,tzone-names = "gpuss-0-usr", "gpuss-1-usr";
+
+		qcom,tzone-name = "gpuss-max-step";
 
 		qcom,pm-qos-active-latency = <44>;
 
@@ -216,7 +217,7 @@
 
 			qcom,gpu-pwrlevel@0 {
 				reg = <0>;
-				qcom,gpu-freq = <480000000>;
+				qcom,gpu-freq = <800000000>;
 				qcom,bus-freq-ddr7 = <11>;
 				qcom,bus-min-ddr7 = <11>;
 				qcom,bus-max-ddr7 = <11>;
@@ -324,12 +325,10 @@
 				<&clock_gpucc GPU_CC_CXO_CLK>,
 				<&clock_gcc GCC_DDRSS_GPU_AXI_CLK>,
 				<&clock_gcc GCC_GPU_MEMNOC_GFX_CLK>,
-				<&clock_gpucc GPU_CC_AHB_CLK>,
-				<&clock_aop QDSS_CLK>;
+				<&clock_gpucc GPU_CC_AHB_CLK>;
 
 		clock-names = "gmu_clk", "cxo_clk", "axi_clk",
-				"memnoc_clk", "gpu_cc_ahb",
-				"apb_pclk";
+				"memnoc_clk", "gpu_cc_ahb";
 
 		/* AOP mailbox for sending ACD enable and disable messages */
 		mboxes = <&qmp_aop 0>;

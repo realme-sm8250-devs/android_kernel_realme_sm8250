@@ -470,8 +470,10 @@ static int fsa4480_parse_dt(struct fsa4480_priv *fsa_priv,
     struct device_node *dNode = dev->of_node;
     int ret = 0;
 
-    if (dNode == NULL)
-        return -ENODEV;
+    if (dNode == NULL){
+		return -ENODEV;
+	}
+        
 
 	if (!fsa_priv) {
 		pr_err("%s: fsa_priv is NULL\n", __func__);
@@ -575,10 +577,7 @@ static int fsa4480_probe(struct i2c_client *i2c,
 	INIT_WORK(&fsa_priv->usbc_analog_work,
 		  fsa4480_usbc_analog_work_fn);
 
-	fsa_priv->fsa4480_notifier.rwsem =
-		(struct rw_semaphore)__RWSEM_INITIALIZER
-		((fsa_priv->fsa4480_notifier).rwsem);
-	fsa_priv->fsa4480_notifier.head = NULL;
+	BLOCKING_INIT_NOTIFIER_HEAD(&fsa_priv->fsa4480_notifier);
 
 	return 0;
 

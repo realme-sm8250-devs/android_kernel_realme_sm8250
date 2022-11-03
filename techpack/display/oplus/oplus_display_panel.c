@@ -402,7 +402,7 @@ static const struct file_operations panel_ops =
 	.mmap               = panel_mmap,
 };
 
-static int __init oplus_display_panel_init()
+static int __init oplus_display_panel_init(void)
 {
 	int rc = 0;
 
@@ -451,7 +451,7 @@ err_class_create:
 	return rc;
 }
 
-static void __exit oplus_display_panel_exit()
+static void __exit oplus_display_panel_exit(void)
 {
 	pr_info("%s\n", __func__);
 
@@ -464,4 +464,4 @@ static void __exit oplus_display_panel_exit()
 module_init(oplus_display_panel_init);
 module_exit(oplus_display_panel_exit);
 MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("Lisheng <lisheng1@oplus.com>");
+MODULE_AUTHOR("Lisheng");

@@ -227,7 +227,7 @@ static int oplus_find_index_invmaplist(uint32_t bl_level)
 		}
 	}
 
-	pr_err("%s error\n", __func__);
+	//pr_err("%s error\n", __func__);
 	return -1;
 }
 static int oplus_get_panel_brightness_to_alpha(void)
@@ -534,6 +534,9 @@ int dsi_panel_parse_oplus_config(struct dsi_panel *panel)
 		panel->oplus_priv.low_light_gamma_is_adjusted = false;
 	}
 
+	/*#ifdef OPLUS_BUG_STABILITY*/
+	panel->oplus_priv.oplus_fp_hbm_config_flag = utils->read_bool(utils->data, "oplus,fp-hbm-config-flag");
+	/*#ifdef OPLUS_BUG_STABILITY*/
 	return 0;
 }
 

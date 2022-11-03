@@ -18,7 +18,7 @@
 #include "iris/dsi_iris5_gpio.h"
 #endif
 #ifdef OPLUS_BUG_STABILITY
-#include <soc/oplus/system/boot_mode.h>
+#include <soc/oplus/boot_mode.h>
 #include "oplus_display_private_api.h"
 #include "oplus_dc_diming.h"
 #include "oplus_onscreenfingerprint.h"
@@ -359,7 +359,14 @@ static int dsi_panel_gpio_request(struct dsi_panel *panel)
 			goto error_release_mode_sel;
 		}
 	}
-
+	if (gpio_is_valid(panel->vddr_gpio)) {
+		rc = gpio_request(panel->vddr_gpio, "vddr_gpio");
+		if (rc) {
+			DSI_ERR("request for vddr_gpio failed, rc=%d\n", rc);
+			if (gpio_is_valid(panel->vddr_gpio))
+				gpio_free(panel->vddr_gpio);
+		}
+	}
 	if (gpio_is_valid(panel->panel_test_gpio)) {
 		rc = gpio_request(panel->panel_test_gpio, "panel_test_gpio");
 		if (rc) {
@@ -427,6 +434,9 @@ static int dsi_panel_gpio_release(struct dsi_panel *panel)
 
 	if (gpio_is_valid(panel->reset_config.lcd_mode_sel_gpio))
 		gpio_free(panel->reset_config.lcd_mode_sel_gpio);
+
+	if (gpio_is_valid(panel->vddr_gpio))
+		gpio_free(panel->vddr_gpio);
 
 	if (gpio_is_valid(panel->panel_test_gpio))
 		gpio_free(panel->panel_test_gpio);
@@ -585,7 +595,6 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 #ifdef OPLUS_BUG_STABILITY
 	pr_err("debug for dsi_panel_power_on\n");
 #endif
-
 #ifdef OPLUS_BUG_STABILITY
 	if (!strstr(panel->oplus_priv.vendor_name,"NT36672C")) {
 		rc = dsi_pwr_enable_regulator(&panel->power_info, true);
@@ -595,7 +604,14 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 		}
 	}
 #endif /*OPLUS_BUG_STABILITY*/
-
+	if (gpio_is_valid(panel->vddr_gpio)) {
+		rc = gpio_direction_output(panel->vddr_gpio, 1);
+		DSI_ERR("enable vddr gpio\n");
+		if (rc) {
+			DSI_ERR("unable to set dir for vddr gpio rc=%d\n", rc);
+			goto error_disable_vddr;
+		}
+	}
 	rc = dsi_panel_set_pinctrl_state(panel, true);
 	if (rc) {
 		DSI_ERR("[%s] failed to set pinctrl, rc=%d\n", panel->name, rc);
@@ -665,6 +681,10 @@ error_disable_gpio:
 
 	(void)dsi_panel_set_pinctrl_state(panel, false);
 
+error_disable_vddr:
+		if (gpio_is_valid(panel->vddr_gpio))
+			gpio_set_value(panel->vddr_gpio, 0);
+
 error_disable_vregs:
 	(void)dsi_pwr_enable_regulator(&panel->power_info, false);
 
@@ -684,7 +704,6 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 
 #ifdef OPLUS_BUG_STABILITY
 	int esd_check = get_esd_check_happened();
-
 	pr_err("debug for dsi_panel_power_off\n");
 #endif
 
@@ -743,6 +762,12 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		gpio_set_value(panel->reset_config.panel_vout_gpio, 0);
 #endif
 
+	if (gpio_is_valid(panel->vddr_gpio)) {
+		gpio_set_value(panel->vddr_gpio, 0);
+		DSI_ERR("disable vddr gpio\n");
+		msleep(1);
+	}
+
 	if (gpio_is_valid(panel->panel_test_gpio)) {
 		rc = gpio_direction_input(panel->panel_test_gpio);
 		if (rc)
@@ -760,6 +785,10 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 	if (rc)
 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
 				panel->name, rc);
+#ifdef OPLUS_BUG_STABILITY
+	/* Add for ensure complete power down done of hardware */
+	usleep_range(70 * 1000, (70 * 1000) + 100);
+#endif
 
 	return rc;
 }
@@ -804,6 +833,11 @@ int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 	SDE_EVT32(type, state, count);
 
 #ifdef OPLUS_BUG_STABILITY
+	rc = dsi_panel_tx_cmd_hbm_pre_check(panel, type, cmd_set_prop_map);
+	if (rc == 1) {
+		return 0;
+	}
+
 	if (type != DSI_CMD_READ_SAMSUNG_PANEL_REGISTER_ON
 		&& type != DSI_CMD_READ_SAMSUNG_PANEL_REGISTER_OFF) {
 		        pr_err("dsi_cmd %s\n", cmd_set_prop_map[type]);
@@ -859,6 +893,11 @@ int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 					((cmds->post_wait_ms*1000)+10));
 		cmds++;
 	}
+
+#ifdef OPLUS_BUG_STABILITY
+	dsi_panel_tx_cmd_hbm_post_check(panel, type);
+#endif /*OPLUS_BUG_STABILITY*/
+
 error:
 	return rc;
 }
@@ -1050,9 +1089,9 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 				}
 			}
 		} else if ((!strcmp(panel->name,"samsung ams643ye01 amoled fhd+ panel") ||
-			!strcmp(panel->name,"samsung ams643ye01 in 20057 amoled fhd+ panel")) &&
+			!strcmp(panel->name,"samsung ams643ye01 in 20057 amoled fhd+ panel") ||
+			!strcmp(panel->name,"s6e3fc3_fhd_oled_cmd_samsung")) &&
 			OPLUS_DISPLAY_AOD_SCENE != get_oplus_display_scene()) {
-
 			if ((bl_lvl > panel->bl_config.bl_normal_max_level) && (oplus_last_backlight <= panel->bl_config.bl_normal_max_level))
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_HBM_ENTER_SWITCH);
 			else if((bl_lvl <= panel->bl_config.bl_normal_max_level) && (oplus_last_backlight > panel->bl_config.bl_normal_max_level))
@@ -2956,6 +2995,11 @@ static int dsi_panel_parse_gpios(struct dsi_panel *panel)
 	if (!gpio_is_valid(panel->reset_config.panel_vddr_aod_en_gpio)) {
 		DSI_ERR("[%s] failed get panel_vddr_aod_en_gpio, rc=%d\n", panel->name, rc);
 	}
+	panel->vddr_gpio = utils->get_named_gpio(utils->data, "qcom,vddr-gpio", 0);
+	if (!gpio_is_valid(panel->vddr_gpio)) {
+		DSI_DEBUG("[%s] vddr-gpio is not set, rc=%d\n",
+			 panel->name, rc);
+	}
 #endif
 
 	panel->reset_config.disp_en_gpio = utils->get_named_gpio(utils->data,
@@ -4324,8 +4368,9 @@ int dsi_panel_drv_init(struct dsi_panel *panel,
 		       rc);
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
         if (iris_is_chip_supported()) {
-            if (!strcmp(panel->type, "primary"))
-                goto error_pinctrl_deinit;
+            if (!strcmp(panel->type, "primary")){
+				goto error_pinctrl_deinit;
+			}
 	        rc = 0;
 	    } else 
 #endif
@@ -5043,7 +5088,8 @@ int dsi_panel_set_nolp(struct dsi_panel *panel)
 
 #ifdef OPLUS_BUG_STABILITY
 	if ((!strcmp(panel->oplus_priv.vendor_name, "AMS643YE01") ||
-		!strcmp(panel->oplus_priv.vendor_name, "AMS643YE01IN20057")) &&
+		!strcmp(panel->oplus_priv.vendor_name, "AMS643YE01IN20057") ||
+		!strcmp(panel->oplus_priv.vendor_name, "s6e3fc3")) &&
 		(panel->bl_config.bl_level > panel->bl_config.brightness_normal_max_level)) {
 		if (!strcmp(panel->name,"samsung ams643ye01 in 20127 amoled fhd+ panel")) {
 			rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_HBM_ENTER1_SWITCH);

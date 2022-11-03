@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -157,7 +157,7 @@ struct dcc_drvdata {
 	uint32_t		*nr_config;
 	uint32_t		nr_link_list;
 	uint8_t			curr_list;
-	uint8_t			cti_trig;
+	uint8_t			*cti_trig;
 	uint8_t			loopoff;
 };
 
@@ -341,21 +341,27 @@ static int __dcc_ll_cfg(struct dcc_drvdata *drvdata, int curr_list)
 
 			addr = DCC_RD_MOD_WR_DESCRIPTOR;
 			ret = dcc_sram_writel(drvdata, addr, sram_offset);
-			if (ret)
+			if (ret){
 				goto overstep;
 				sram_offset += 4;
+			}
+
 
 			ret = dcc_sram_writel(drvdata,
 					entry->mask, sram_offset);
-			if (ret)
+			if (ret){
 				goto overstep;
 				sram_offset += 4;
+			}
+
 
 			ret = dcc_sram_writel(drvdata,
 					entry->write_val, sram_offset);
-			if (ret)
+			if (ret){
 				goto overstep;
 				sram_offset += 4;
+			}
+
 			addr = 0;
 			break;
 		}
@@ -366,8 +372,10 @@ static int __dcc_ll_cfg(struct dcc_drvdata *drvdata, int curr_list)
 			if (link) {
 				ret = dcc_sram_writel(drvdata,
 						link, sram_offset);
-				if (ret)
+				if (ret){
 					goto overstep;
+				}
+					
 				sram_offset += 4;
 			}
 
@@ -380,8 +388,10 @@ static int __dcc_ll_cfg(struct dcc_drvdata *drvdata, int curr_list)
 
 				ret = dcc_sram_writel(drvdata,
 						loop, sram_offset);
-				if (ret)
+				if (ret){
 					goto overstep;
+				}
+					
 				sram_offset += 4;
 
 				loop_start = false;
@@ -436,20 +446,26 @@ static int __dcc_ll_cfg(struct dcc_drvdata *drvdata, int curr_list)
 					| DCC_AHB_IND;
 
 			ret = dcc_sram_writel(drvdata, addr, sram_offset);
-			if (ret)
+			if (ret){
 				goto overstep;
 				sram_offset += 4;
+			}
+
 
 			ret = dcc_sram_writel(drvdata, link, sram_offset);
-			if (ret)
+			if (ret){
 				goto overstep;
 				sram_offset += 4;
+			}
+
 
 			ret = dcc_sram_writel(drvdata,
 				entry->write_val, sram_offset);
-			if (ret)
+			if (ret){
 				goto overstep;
 				sram_offset += 4;
+			}
+
 			addr = 0x00;
 			link = 0;
 			break;
@@ -776,7 +792,7 @@ static int dcc_enable(struct dcc_drvdata *drvdata)
 		}
 
 		/* 5. Configure trigger */
-		dcc_writel(drvdata, BIT(9) | ((drvdata->cti_trig << 8) |
+		dcc_writel(drvdata, BIT(9) | ((drvdata->cti_trig[list] << 8) |
 			   (drvdata->data_sink[list] << 4) |
 			   (drvdata->func_type[list])), DCC_LL_CFG(list));
 	}
@@ -1485,7 +1501,8 @@ static ssize_t cti_trig_show(struct device *dev,
 {
 	struct dcc_drvdata *drvdata = dev_get_drvdata(dev);
 
-	return scnprintf(buf, PAGE_SIZE, "%d\n", drvdata->cti_trig);
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+			drvdata->cti_trig[drvdata->curr_list]);
 }
 
 static ssize_t cti_trig_store(struct device *dev,
@@ -1513,9 +1530,11 @@ static ssize_t cti_trig_store(struct device *dev,
 	}
 
 	if (val)
-		drvdata->cti_trig = 1;
+		drvdata->cti_trig[drvdata->curr_list] = 1;
 	else
-		drvdata->cti_trig = 0;
+		drvdata->cti_trig[drvdata->curr_list] = 0;
+
+	ret = size;
 out:
 	mutex_unlock(&drvdata->mutex);
 	return ret;
@@ -1863,6 +1882,10 @@ static int dcc_probe(struct platform_device *pdev)
 	drvdata->nr_config = devm_kzalloc(dev, drvdata->nr_link_list *
 			sizeof(uint32_t), GFP_KERNEL);
 	if (!drvdata->nr_config)
+		return -ENOMEM;
+	drvdata->cti_trig = devm_kzalloc(dev, drvdata->nr_link_list *
+			sizeof(uint8_t), GFP_KERNEL);
+	if (!drvdata->cti_trig)
 		return -ENOMEM;
 	drvdata->cfg_head = devm_kzalloc(dev, drvdata->nr_link_list *
 			sizeof(struct list_head), GFP_KERNEL);

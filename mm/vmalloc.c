@@ -1990,6 +1990,7 @@ int map_kernel_range_noflush(unsigned long addr, unsigned long size,
 {
 	return vmap_page_range_noflush(addr, addr + size, prot, pages);
 }
+EXPORT_SYMBOL_GPL(map_kernel_range_noflush);
 
 /**
  * unmap_kernel_range_noflush - unmap kernel VM area
@@ -2343,7 +2344,7 @@ void *vmap(struct page **pages, unsigned int count,
 
 	might_sleep();
 
-	if (count > totalram_pages)
+	if (count > totalram_pages())
 		return NULL;
 
 	size = (unsigned long)count << PAGE_SHIFT;
@@ -2452,7 +2453,7 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
 	unsigned long real_size = size;
 
 	size = PAGE_ALIGN(size);
-	if (!size || (size >> PAGE_SHIFT) > totalram_pages)
+	if (!size || (size >> PAGE_SHIFT) > totalram_pages())
 		goto fail;
 
 	area = __get_vm_area_node(size, align, VM_ALLOC | VM_UNINITIALIZED |

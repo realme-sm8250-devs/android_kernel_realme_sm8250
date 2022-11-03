@@ -2520,27 +2520,28 @@ fail:
 	return ret;
 }
 
-static void voc_get_tx_rx_topology(struct voice_data *v,
-				   uint32_t *tx_topology_id,
-				   uint32_t *rx_topology_id)
-{
-	uint32_t tx_id = 0;
-	uint32_t rx_id = 0;
+// We don't need this function because is now extracted where we need it
+// static void voc_get_tx_rx_topology(struct voice_data *v,
+// 				   uint32_t *tx_topology_id,
+// 				   uint32_t *rx_topology_id)
+// {
+// 	uint32_t tx_id = 0;
+// 	uint32_t rx_id = 0;
 
-	if (v->lch_mode == VOICE_LCH_START || v->disable_topology) {
-		pr_debug("%s: Setting TX and RX topology to NONE for LCH\n",
-			 __func__);
+// 	if (v->lch_mode == VOICE_LCH_START || v->disable_topology) {
+// 		pr_debug("%s: Setting TX and RX topology to NONE for LCH\n",
+// 			 __func__);
 
-		tx_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
-		rx_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
-	} else {
-		tx_id = voice_get_topology(CVP_VOC_TX_TOPOLOGY_CAL);
-		rx_id = voice_get_topology(CVP_VOC_RX_TOPOLOGY_CAL);
-	}
+// 		tx_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
+// 		rx_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
+// 	} else {
+// 		tx_id = voice_get_topology(CVP_VOC_TX_TOPOLOGY_CAL);
+// 		rx_id = voice_get_topology(CVP_VOC_RX_TOPOLOGY_CAL);
+// 	}
 
-	*tx_topology_id = tx_id;
-	*rx_topology_id = rx_id;
-}
+// 	*tx_topology_id = tx_id;
+// 	*rx_topology_id = rx_id;
+// }
 
 static int voice_send_set_device_cmd(struct voice_data *v)
 {
@@ -2582,9 +2583,24 @@ static int voice_send_set_device_cmd(struct voice_data *v)
 		cvp_setdev_cmd.hdr.opcode =
 				VSS_IVOCPROC_CMD_SET_DEVICE_V2;
 
-	voc_get_tx_rx_topology(v,
-			&cvp_setdev_cmd.cvp_set_device_v2.tx_topology_id,
-			&cvp_setdev_cmd.cvp_set_device_v2.rx_topology_id);
+	// uint32_t tx_id = 0;
+	// uint32_t rx_id = 0;	// Useless variables from voc_get_tx_rx_topology function
+
+	if (v->lch_mode == VOICE_LCH_START || v->disable_topology) {
+		pr_debug("%s: Setting TX and RX topology to NONE for LCH\n",
+			 __func__);
+
+		cvp_setdev_cmd.cvp_set_device_v2.tx_topology_id  = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
+		cvp_setdev_cmd.cvp_set_device_v2.rx_topology_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
+	} else {
+		cvp_setdev_cmd.cvp_set_device_v2.tx_topology_id  = voice_get_topology(CVP_VOC_TX_TOPOLOGY_CAL);
+		cvp_setdev_cmd.cvp_set_device_v2.rx_topology_id = voice_get_topology(CVP_VOC_RX_TOPOLOGY_CAL);
+	}
+
+	// voc_get_tx_rx_topology(v,
+	// 		&cvp_setdev_cmd.cvp_set_device_v2.tx_topology_id,
+	// 		&cvp_setdev_cmd.cvp_set_device_v2.rx_topology_id);
+	// This function is broken on Clang 14 because of packed struct, I extract so we don't need pointer
 
 	voice_set_topology_specific_info(v, CVP_VOC_RX_TOPOLOGY_CAL);
 	voice_set_topology_specific_info(v, CVP_VOC_TX_TOPOLOGY_CAL);
@@ -2961,16 +2977,35 @@ static int voice_send_cvp_create_cmd(struct voice_data *v)
 	cvp_session_cmd.hdr.token = 0;
 
 	if (voice_get_cvd_int_version(common.cvd_version) >=
-	    CVD_INT_VERSION_2_2)
-		cvp_session_cmd.hdr.opcode =
+	    CVD_INT_VERSION_2_2){
+			cvp_session_cmd.hdr.opcode =
 				VSS_IVOCPROC_CMD_CREATE_FULL_CONTROL_SESSION_V3;
-	else
-		cvp_session_cmd.hdr.opcode =
-				VSS_IVOCPROC_CMD_CREATE_FULL_CONTROL_SESSION_V2;
+		}
 
-	voc_get_tx_rx_topology(v,
-			&cvp_session_cmd.cvp_session.tx_topology_id,
-			&cvp_session_cmd.cvp_session.rx_topology_id);
+	else{
+		cvp_session_cmd.hdr.opcode =
+			VSS_IVOCPROC_CMD_CREATE_FULL_CONTROL_SESSION_V2;
+	}
+
+
+		// uint32_t tx_id = 0;
+		// uint32_t rx_id = 0;	Useless variables
+
+		if (v->lch_mode == VOICE_LCH_START || v->disable_topology) {
+			pr_debug("%s: Setting TX and RX topology to NONE for LCH\n",
+				 __func__);
+
+			cvp_session_cmd.cvp_session.tx_topology_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
+			cvp_session_cmd.cvp_session.rx_topology_id = VSS_IVOCPROC_TOPOLOGY_ID_NONE;
+		} else {
+			cvp_session_cmd.cvp_session.tx_topology_id = voice_get_topology(CVP_VOC_TX_TOPOLOGY_CAL);
+			cvp_session_cmd.cvp_session.rx_topology_id = voice_get_topology(CVP_VOC_RX_TOPOLOGY_CAL);
+		}
+
+	// voc_get_tx_rx_topology(v,
+	// 		&cvp_session_cmd.cvp_session.tx_topology_id,
+	// 		&cvp_session_cmd.cvp_session.rx_topology_id);
+	// This function is broken on Clang 14 because of packed struct, I extract so we don't need pointer
 
 	voice_set_topology_specific_info(v, CVP_VOC_RX_TOPOLOGY_CAL);
 	voice_set_topology_specific_info(v, CVP_VOC_TX_TOPOLOGY_CAL);

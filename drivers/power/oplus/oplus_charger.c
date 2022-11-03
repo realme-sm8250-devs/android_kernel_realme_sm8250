@@ -86,6 +86,13 @@
 
 static struct oplus_chg_chip *g_charger_chip = NULL;
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+#include <linux/moduleparam.h>
+#include <linux/fastchg.h>
+static int ffc_val = 900;
+module_param(ffc_val, int, 0644);
+#endif
+
 #define FLASH_SCREEN_CTRL_OTA		0X01
 #define FLASH_SCREEN_CTRL_DTSI	0X02
 
@@ -4171,7 +4178,11 @@ void oplus_chg_set_input_current_limit(struct oplus_chg_chip *chip)
 		case POWER_SUPPLY_TYPE_UNKNOWN:
 			return;
 		case POWER_SUPPLY_TYPE_USB:
+			#ifdef CONFIG_FORCE_FAST_CHARGE
+				current_limit = ffc_val;
+			#else
 			current_limit = chip->limits.input_current_usb_ma;
+			#endif
 			break;
 		case POWER_SUPPLY_TYPE_USB_DCP:
 			current_limit = chip->limits.input_current_charger_ma;
@@ -9074,7 +9085,7 @@ static void oplus_chg_reset_adapter_work(struct work_struct *work) {
 	}
 }
 
-void oplus_chg_turn_on_charging_in_work()
+void oplus_chg_turn_on_charging_in_work(void)
 {
 	if (g_charger_chip)
 		schedule_delayed_work(&g_charger_chip->turn_on_charging_work, 0);

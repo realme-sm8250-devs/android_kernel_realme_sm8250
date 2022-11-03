@@ -749,10 +749,10 @@ static void set_max_threads(unsigned int max_threads_suggested)
 	 * The number of threads shall be limited such that the thread
 	 * structures may only consume a small part of the available memory.
 	 */
-	if (fls64(totalram_pages) + fls64(PAGE_SIZE) > 64)
+	if (fls64(totalram_pages()) + fls64(PAGE_SIZE) > 64)
 		threads = MAX_THREADS;
 	else
-		threads = div64_u64((u64) totalram_pages * (u64) PAGE_SIZE,
+		threads = div64_u64((u64) totalram_pages() * (u64) PAGE_SIZE,
 				    (u64) THREAD_SIZE * 8UL);
 
 	if (threads > max_threads_suggested)
@@ -899,10 +899,12 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 #endif
 
 	/*
-	 * One for us, one for whoever does the "release_task()" (usually
-	 * parent)
+	 * One for the user space visible state that goes away when reaped.
+	 * One for the scheduler.
 	 */
-	atomic_set(&tsk->usage, 2);
+	refcount_set(&tsk->rcu_users, 2);
+	/* One for the rcu users */
+	atomic_set(&tsk->usage, 1);
 #ifdef CONFIG_BLK_DEV_IO_TRACE
 	tsk->btrace_seq = 0;
 #endif

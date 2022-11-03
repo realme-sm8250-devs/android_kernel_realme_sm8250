@@ -431,7 +431,6 @@ void schedtune_enqueue_task(struct task_struct *p, int cpu)
 	 * do_exit()::cgroup_exit() and task migration.
 	 */
 	raw_spin_lock_irqsave(&bg->lock, irq_flags);
-
 	idx = p->stune_idx;
 
 	schedtune_tasks_update(p, cpu, idx, ENQUEUE_TASK);
@@ -515,7 +514,6 @@ void schedtune_dequeue_task(struct task_struct *p, int cpu)
 	 * interrupt to be disabled to avoid race conditions on...
 	 */
 	raw_spin_lock_irqsave(&bg->lock, irq_flags);
-
 	idx = p->stune_idx;
 
 	schedtune_tasks_update(p, cpu, idx, DEQUEUE_TASK);
@@ -523,11 +521,10 @@ void schedtune_dequeue_task(struct task_struct *p, int cpu)
 	raw_spin_unlock_irqrestore(&bg->lock, irq_flags);
 }
 
-int schedtune_cpu_boost_with(int cpu, struct task_struct *p)
+int schedtune_cpu_boost(int cpu)
 {
 	struct boost_groups *bg;
 	u64 now;
-	int task_boost = p ? schedtune_task_boost(p) : -100;
 
 	bg = &per_cpu(cpu_boost_groups, cpu);
 	now = sched_clock_cpu(cpu);
@@ -536,7 +533,7 @@ int schedtune_cpu_boost_with(int cpu, struct task_struct *p)
 	if (schedtune_boost_timeout(now, bg->boost_ts))
 		schedtune_cpu_update(cpu, now);
 
-	return max(bg->boost_max, task_boost);
+	return bg->boost_max;
 }
 
 int schedtune_task_boost(struct task_struct *p)
@@ -724,7 +721,6 @@ static struct cftype files[] = {
 		.read_u64 = prefer_idle_read,
 		.write_u64 = prefer_idle_write,
 	},
-
 	{ }	/* terminate */
 };
 
@@ -852,5 +848,21 @@ schedtune_init(void)
 	schedtune_spc_rdiv = reciprocal_value(100);
 	schedtune_init_cgroups();
 	return 0;
+}
+
+int schedtune_cpu_boost_with(int cpu, struct task_struct *p)
+{
+	struct boost_groups *bg;
+	u64 now;
+	int task_boost = p ? schedtune_task_boost(p) : -100;
+
+	bg = &per_cpu(cpu_boost_groups, cpu);
+	now = sched_clock_cpu(cpu);
+
+	/* Check to see if we have a hold in effect */
+	if (schedtune_boost_timeout(now, bg->boost_ts))
+		schedtune_cpu_update(cpu, now);
+
+	return max(bg->boost_max, task_boost);
 }
 postcore_initcall(schedtune_init);

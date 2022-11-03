@@ -49,7 +49,32 @@ static inline void set_max_mapnr(unsigned long limit)
 static inline void set_max_mapnr(unsigned long limit) { }
 #endif
 
-extern unsigned long totalram_pages;
+extern atomic_long_t _totalram_pages;
+static inline unsigned long totalram_pages(void)
+{
+	return (unsigned long)atomic_long_read(&_totalram_pages);
+}
+
+static inline void totalram_pages_inc(void)
+{
+	atomic_long_inc(&_totalram_pages);
+}
+
+static inline void totalram_pages_dec(void)
+{
+	atomic_long_dec(&_totalram_pages);
+}
+
+static inline void totalram_pages_add(long count)
+{
+	atomic_long_add(count, &_totalram_pages);
+}
+
+static inline void totalram_pages_set(long val)
+{
+	atomic_long_set(&_totalram_pages, val);
+}
+
 extern void * high_memory;
 extern int page_cluster;
 
@@ -1498,22 +1523,13 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
 #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
 static inline void vm_write_begin(struct vm_area_struct *vma)
 {
-	write_seqcount_begin(&vma->vm_sequence);
-}
-static inline void vm_write_begin_nested(struct vm_area_struct *vma,
-					 int subclass)
-{
-	write_seqcount_begin_nested(&vma->vm_sequence, subclass);
-}
-static inline void vm_write_end(struct vm_area_struct *vma)
-{
-	write_seqcount_end(&vma->vm_sequence);
-}
-static inline void vm_raw_write_begin(struct vm_area_struct *vma)
-{
+	/*
+	 * The reads never spins and preemption
+	 * disablement is not required.
+	 */
 	raw_write_seqcount_begin(&vma->vm_sequence);
 }
-static inline void vm_raw_write_end(struct vm_area_struct *vma)
+static inline void vm_write_end(struct vm_area_struct *vma)
 {
 	raw_write_seqcount_end(&vma->vm_sequence);
 }
@@ -1521,17 +1537,7 @@ static inline void vm_raw_write_end(struct vm_area_struct *vma)
 static inline void vm_write_begin(struct vm_area_struct *vma)
 {
 }
-static inline void vm_write_begin_nested(struct vm_area_struct *vma,
-					 int subclass)
-{
-}
 static inline void vm_write_end(struct vm_area_struct *vma)
-{
-}
-static inline void vm_raw_write_begin(struct vm_area_struct *vma)
-{
-}
-static inline void vm_raw_write_end(struct vm_area_struct *vma)
 {
 }
 #endif /* CONFIG_SPECULATIVE_PAGE_FAULT */
@@ -1618,6 +1624,28 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
 {
 	unmap_mapping_range(mapping, holebegin, holelen, 0);
 }
+
+extern void vma_do_file_update_time(struct vm_area_struct *, const char[], int);
+extern struct file *vma_do_pr_or_file(struct vm_area_struct *, const char[],
+				      int);
+extern void vma_do_get_file(struct vm_area_struct *, const char[], int);
+extern void vma_do_fput(struct vm_area_struct *, const char[], int);
+
+#define vma_file_update_time(vma)	vma_do_file_update_time(vma, __func__, \
+								__LINE__)
+#define vma_pr_or_file(vma)		vma_do_pr_or_file(vma, __func__, \
+							  __LINE__)
+#define vma_get_file(vma)		vma_do_get_file(vma, __func__, __LINE__)
+#define vma_fput(vma)			vma_do_fput(vma, __func__, __LINE__)
+
+#ifndef CONFIG_MMU
+extern struct file *vmr_do_pr_or_file(struct vm_region *, const char[], int);
+extern void vmr_do_fput(struct vm_region *, const char[], int);
+
+#define vmr_pr_or_file(region)		vmr_do_pr_or_file(region, __func__, \
+							  __LINE__)
+#define vmr_fput(region)		vmr_do_fput(region, __func__, __LINE__)
+#endif /* !CONFIG_MMU */
 
 extern int access_process_vm(struct task_struct *tsk, unsigned long addr,
 		void *buf, int len, unsigned int gup_flags);
@@ -2578,8 +2606,8 @@ int __must_check write_one_page(struct page *page);
 void task_dirty_inc(struct task_struct *tsk);
 
 /* readahead.c */
-#define VM_MAX_READAHEAD	(totalram_pages > 0x100000 ? 512 : 128)	/* kbytes */
-#define VM_MIN_READAHEAD	16	/* kbytes (includes current page) */
+#define VM_MAX_READAHEAD	2048	/* kbytes */
+#define VM_MIN_READAHEAD	256	/* kbytes (includes current page) */
 
 int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
 			pgoff_t offset, unsigned long nr_to_read);
