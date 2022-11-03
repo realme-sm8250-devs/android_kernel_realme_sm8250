@@ -1204,7 +1204,7 @@ config SCHED_TUNE
 
 	  If unsure, say N.
 	  
-onfig STUNE_ASSIST
+config STUNE_ASSIST
 	bool "SchedTune configuration helper"
 	depends on SCHED_TUNE
 	depends on ANDROID
