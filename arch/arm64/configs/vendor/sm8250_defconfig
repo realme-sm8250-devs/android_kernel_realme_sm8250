@@ -4,10 +4,10 @@
 #
 
 #
-# Compiler: Android (8490178, based on r450784d) clang version 14.0.6 (https://android.googlesource.com/toolchain/llvm-project 4c603efb0cca074e9238af8b4106c30add4418f6)
+# Compiler: Clang 16
 #
 
-CONFIG_KLAPSE=y
+CONFIG_KLAPSE=n
 # CONFIG_DEVFREQ_BOOST is not set
 # CONFIG_DEVFREQ_BOOST_DDR is not set
 # CONFIG_DEVFREQ_BOOST_GPU is not set
